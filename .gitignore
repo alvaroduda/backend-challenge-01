@@ -1,0 +1,75 @@
+# Dependências
+node_modules/
+yarn.lock
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Sistema operacional - Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Sistema operacional - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Sistema operacional - Linux
+*~
+.directory
+.Trash-*
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+.project
+.classpath
+.settings/
+
+# Cache e temporários
+.npm/
+.eslintcache
+.nyc_output/
+coverage/
+*.tmp
+tmp/
+temp/
+.cache/
+
+# Build e dist
+dist/
+build/
+out/
+
+# Docker
+.dockerignore
+# docker-compose.yml e Dockerfile DEVEM ser commitados
+docker-compose.override.yml
+
+# Backup e arquivos temporários
+*.bak
+*.backup
+*.old
+*.orig
+*.save

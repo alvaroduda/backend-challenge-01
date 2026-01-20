@@ -1,0 +1,343 @@
+openapi: 3.0.0
+info:
+  title: Device Event Consumer API
+  version: 1.0.0
+  description: |
+    API que consome eventos de dispositivos do Kafka e persiste em ClickHouse, MongoDB e MinIO.
+    
+    **Importante:** Os testes dos endpoints devem ser realizados utilizando o Postman. Esta documentação serve apenas como referência dos endpoints disponíveis e seus parâmetros.
+    
+    Uma collection do Postman está disponível no arquivo `postman-collection.json` na raiz do projeto.
+
+servers:
+  - url: http://localhost:3001
+
+components:
+  schemas:
+    Device:
+      type: object
+      required:
+        - nome
+        - cameraID
+        - zona
+        - enderecoRTSP
+      properties:
+        _id:
+          type: string
+          description: ID único do dispositivo
+        nome:
+          type: string
+          description: Nome do dispositivo
+        cameraID:
+          type: string
+          description: ID único da câmera
+        zona:
+          type: string
+          description: Zona onde o dispositivo está localizado
+        enderecoRTSP:
+          type: string
+          description: Endereço RTSP da câmera
+        createdAt:
+          type: string
+          format: date-time
+          description: Data de criação
+        updatedAt:
+          type: string
+          format: date-time
+          description: Data de atualização
+    
+    Event:
+      type: object
+      properties:
+        eventId:
+          type: string
+          description: ID único do evento
+        deviceId:
+          type: string
+          description: ID do dispositivo
+        eventType:
+          type: string
+          description: Tipo do evento
+        timestamp:
+          type: string
+          format: date-time
+          description: Data e hora do evento
+        image_object_key:
+          type: string
+          description: Chave do objeto da imagem no MinIO
+    
+    ImageUrl:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL assinada para visualização da imagem
+        expiresSeconds:
+          type: integer
+          description: Tempo de expiração da URL em segundos
+    
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro
+
+paths:
+  /devices:
+    post:
+      summary: Cria um novo dispositivo
+      tags:
+        - Dispositivos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nome
+                - cameraID
+                - zona
+                - enderecoRTSP
+              properties:
+                nome:
+                  type: string
+                  example: "Nome da câmera"
+                cameraID:
+                  type: string
+                  example: "deviceId do Device Event API"
+                zona:
+                  type: string
+                  example: "zona da câmera"
+                enderecoRTSP:
+                  type: string
+                  example: "rtsp://link"
+      responses:
+        '201':
+          description: Dispositivo criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Campos obrigatórios faltando
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Dispositivo com este cameraID já existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    get:
+      summary: Lista todos os dispositivos
+      tags:
+        - Dispositivos
+      responses:
+        '200':
+          description: Lista de dispositivos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+
+  /devices/{id}:
+    get:
+      summary: Busca um dispositivo por ID
+      tags:
+        - Dispositivos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID do dispositivo
+      responses:
+        '200':
+          description: Dispositivo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Dispositivo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Atualiza um dispositivo
+      tags:
+        - Dispositivos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID do dispositivo
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                  example: "Câmera Principal"
+                cameraID:
+                  type: string
+                  example: "CAM001"
+                zona:
+                  type: string
+                  example: "Entrada"
+                enderecoRTSP:
+                  type: string
+                  example: "rtsp://link"
+      responses:
+        '200':
+          description: Dispositivo atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Dispositivo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Dispositivo com este cameraID já existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      summary: Deleta um dispositivo
+      tags:
+        - Dispositivos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID do dispositivo
+      responses:
+        '204':
+          description: Dispositivo deletado com sucesso
+        '400':
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Dispositivo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events:
+    get:
+      summary: Lista eventos de dispositivos
+      tags:
+        - Eventos
+      parameters:
+        - in: query
+          name: deviceId
+          schema:
+            type: string
+          description: Filtrar por ID do dispositivo
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+          description: Data inicial para filtrar eventos
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+          description: Data final para filtrar eventos
+        - in: query
+          name: eventType
+          schema:
+            type: string
+          description: Filtrar por tipo de evento
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Limite de resultados
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          description: Offset para paginação
+      responses:
+        '200':
+          description: Lista de eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+
+  /events/{eventId}/image-url:
+    get:
+      summary: Obtém URL assinada para visualização da imagem de um evento
+      tags:
+        - Eventos
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: string
+          description: ID do evento
+      responses:
+        '200':
+          description: URL assinada gerada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageUrl'
+        '400':
+          description: eventId inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Evento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

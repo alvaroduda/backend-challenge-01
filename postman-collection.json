@@ -1,0 +1,275 @@
+{
+	"info": {
+	  "name": "Device Event Consumer API",
+	  "description": "Collection completa da API Device Event Consumer API\n\nEsta API consome eventos do Kafka e expõe endpoints REST para:\n- CRUD de dispositivos (MongoDB)\n- Consulta de eventos armazenados (ClickHouse)",
+	  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+	  {
+		"name": "Dispositivos",
+		"description": "Endpoints para gerenciar dispositivos (câmeras) no MongoDB",
+		"item": [
+		  {
+			"name": "Criar Dispositivo",
+			"request": {
+			  "method": "POST",
+			  "header": [
+				{
+				  "key": "Content-Type",
+				  "value": "application/json"
+				}
+			  ],
+			  "body": {
+				"mode": "raw",
+				"raw": "{\n  \"nome\": \"Digite o nome da câmera\",\n  \"cameraID\": \"Digite o deviceId do Device Event API\",\n  \"zona\": \"Digite onde a câmera está\",\n  \"enderecoRTSP\": \"rtsp://linkdostreamdacamera\"\n}"
+			  },
+			  "url": {
+				"raw": "{{base_url}}/devices",
+				"host": ["{{base_url}}"],
+				"path": ["devices"]
+			  },
+			  "description": "Cria um novo dispositivo no MongoDB."
+			},
+			"response": []
+		  },
+		  {
+			"name": "Listar Todos os Dispositivos",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/devices",
+				"host": ["{{base_url}}"],
+				"path": ["devices"]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Buscar Dispositivo por ID",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/devices/:id",
+				"host": ["{{base_url}}"],
+				"path": ["devices", ":id"],
+				"variable": [
+				  {
+					"key": "id",
+					"value": "Digite o ID do dispositivo"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Atualizar Dispositivo",
+			"request": {
+			  "method": "PUT",
+			  "header": [
+				{
+				  "key": "Content-Type",
+				  "value": "application/json"
+				}
+			  ],
+			  "body": {
+				"mode": "raw",
+				"raw": "{\n  \"nome\": \"Digite um novo nome para a câmera\",\n  \"zona\": \"Digite uma nova zona para a câmera\"\n}"
+			  },
+			  "url": {
+				"raw": "{{base_url}}/devices/:id",
+				"host": ["{{base_url}}"],
+				"path": ["devices", ":id"],
+				"variable": [
+				  {
+					"key": "id",
+					"value": "Digite o ID do dispositivo"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Deletar Dispositivo",
+			"request": {
+			  "method": "DELETE",
+			  "url": {
+				"raw": "{{base_url}}/devices/:id",
+				"host": ["{{base_url}}"],
+				"path": ["devices", ":id"],
+				"variable": [
+				  {
+					"key": "id",
+					"value": "Digite o ID do dispositivo"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  }
+		]
+	  },
+	  {
+		"name": "Eventos",
+		"description": "Endpoints para consultar eventos armazenados no ClickHouse",
+		"item": [
+		  {
+			"name": "Listar Todos os Eventos",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events",
+				"host": ["{{base_url}}"],
+				"path": ["events"]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Buscar Eventos por Device ID",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events?deviceId=digite_aqui",
+				"host": ["{{base_url}}"],
+				"path": ["events"],
+				"query": [
+				  {
+					"key": "deviceId",
+					"value": "digite aqui o deviceId"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Buscar Eventos por Período",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events?startDate=&endDate=",
+				"host": ["{{base_url}}"],
+				"path": ["events"],
+				"query": [
+				  {
+					"key": "startDate",
+					"value": "Digite a data de início"
+				  },
+				  {
+					"key": "endDate",
+					"value": "Digite a data de fim"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Buscar Eventos por Tipo",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events?eventType=",
+				"host": ["{{base_url}}"],
+				"path": ["events"],
+				"query": [
+				  {
+					"key": "eventType",
+					"value": "digite o tipo de evento"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Buscar Eventos com Limite",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events?limit=digite_o_limite&offset=digite_o_offset",
+				"host": ["{{base_url}}"],
+				"path": ["events"],
+				"query": [
+				  {
+					"key": "limit",
+					"value": "digite o limite"
+				  },
+				  {
+					"key": "offset",
+					"value": "digite o offset"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Buscar Eventos com Múltiplos Filtros",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events",
+				"host": ["{{base_url}}"],
+				"path": ["events"],
+				"query": [
+				  {
+					"key": "deviceId",
+					"value": ""
+				  },
+				  {
+					"key": "startDate",
+					"value": ""
+				  },
+				  {
+					"key": "endDate",
+					"value": ""
+				  },
+				  {
+					"key": "eventType",
+					"value": ""
+				  },
+				  {
+					"key": "limit",
+					"value": "100"
+				  },
+				  {
+					"key": "offset",
+					"value": "0"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  },
+		  {
+			"name": "Obter URL assinada da imagem por eventId",
+			"request": {
+			  "method": "GET",
+			  "url": {
+				"raw": "{{base_url}}/events/:eventId/image-url",
+				"host": ["{{base_url}}"],
+				"path": ["events", ":eventId", "image-url"],
+				"variable": [
+				  {
+					"key": "eventId",
+					"value": "deviceId|timestamp|eventType"
+				  }
+				]
+			  }
+			},
+			"response": []
+		  }
+		]
+	  }
+	],
+	"variable": [
+	  {
+		"key": "base_url",
+		"value": "http://localhost:3001",
+		"type": "string"
+	  }
+	]
+}

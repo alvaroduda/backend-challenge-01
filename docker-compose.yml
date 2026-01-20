@@ -1,0 +1,176 @@
+services:
+  # INFRAESTRUTURA COMPARTILHADA
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: device_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    restart: on-failure
+    ports:
+      - 2181:2181
+    networks:
+      - device-network
+
+
+  kafka:
+    container_name: device_kafka
+    image: confluentinc/cp-kafka:7.9.1
+    restart: on-failure
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - 9092:9092
+    networks:
+      - device-network
+
+
+  # DEVICE EVENT CONSUMER API - BANCOS DE DADOS
+  mongodb:
+    image: mongo:7.0
+    container_name: device_mongodb
+    restart: on-failure
+    environment:
+      MONGO_INITDB_DATABASE: device_consumer_db
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - device-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: device_clickhouse
+    restart: on-failure
+    environment:
+      CLICKHOUSE_DB: device_events_db
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse123
+    ports:
+      - 8123:8123
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1", "--password", "clickhouse123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - device-network
+
+
+  minio:
+    image: minio/minio:latest
+    container_name: device_minio
+    restart: on-failure
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - device-network
+
+
+  # DEVICE EVENT API (PRODUTOR)
+  device-event-api:
+    build:
+      context: ./Device Event API
+      dockerfile: Dockerfile
+    container_name: device_event_api
+    restart: on-failure
+    depends_on:
+      kafka:
+        condition: service_started
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_TOPIC: device-events
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Device Event API/tmp/images:/app/tmp/images
+    networks:
+      - device-network
+
+ 
+  # DEVICE EVENT CONSUMER API
+  device-event-consumer-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: device_event_consumer_api
+    restart: on-failure
+    depends_on:
+      kafka:
+        condition: service_started
+      mongodb:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Servidor
+      PORT: 3001
+      HOST: 0.0.0.0
+      
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_TOPIC: device-events
+      KAFKA_GROUP_ID: device-event-consumer-group
+      
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DATABASE: device_consumer_db
+      
+      CLICKHOUSE_HOST: http://clickhouse:8123
+      CLICKHOUSE_DATABASE: device_events_db
+      CLICKHOUSE_USERNAME: default
+      CLICKHOUSE_PASSWORD: clickhouse123
+    
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: device-images
+      # Host público para geração de URL assinada acessível via navegador
+      MINIO_PUBLIC_ENDPOINT: localhost
+      MINIO_PUBLIC_PORT: 9000
+    ports:
+      - "3001:3001"
+    networks:
+      - device-network
+
+
+volumes:
+  mongodb_data:
+  clickhouse_data:
+  minio_data:
+
+networks:
+  device-network:
+    driver: bridge

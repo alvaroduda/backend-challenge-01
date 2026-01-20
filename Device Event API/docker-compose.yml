@@ -1,0 +1,69 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: clg_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    restart: on-failure
+    ports:
+      - 2181:2181
+    networks:
+      - app-network
+
+  kafka:
+    container_name: clg_kafka
+    image: confluentinc/cp-kafka:7.9.1
+    restart: on-failure
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - 9092:9092
+    networks:
+      - app-network
+
+  kafbat-ui:
+    container_name: clg_kafbat-ui
+    restart: on-failure
+    image: ghcr.io/kafbat/kafka-ui
+    depends_on:
+      - kafka
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: local_cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      SERVER_PORT: 8081
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: 123456
+    ports:
+      - 8081:8081
+    networks:
+      - app-network
+
+  app:
+    build: .
+    container_name: clg_app
+    restart: on-failure
+    depends_on:
+      - kafka
+    env_file:
+      - .env
+    environment:
+      KAFKA_BROKERS: kafka:29092
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./tmp/images:/app/tmp/images
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

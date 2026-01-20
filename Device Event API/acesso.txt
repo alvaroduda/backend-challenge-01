@@ -1,0 +1,18 @@
+API rodando: localhost:3000 — retornando JSON com informações da API
+Kafka UI rodando: localhost:8081 — login funcionando e cluster online (admin/123456)
+Kafka conectado: cluster online indica que Kafka e Zookeeper estão operacionais
+
+
+Testar Health Check (Deve aparecer um JSON com status "healthy"): http://localhost:3000/api/health
+Adicionar: POST http://localhost:3000/api/devices com {"deviceId": "nomedacamera-01"}
+Listar: http://localhost:3000/api/devices
+Kafka UI: http://localhost:8081 → Topics → device-events → Messages
+
+
+## Endpoints
+
+GET - /api/health (Status do Sistema)
+POST - /api/devices (Adicionar dispositivo)
+GET - /api/devices (Listar dispositivos)
+GET - /api/devices/:id/status (Status de um dispositivo)
+DELETE - /api/devices/:id (Remover dispositivo)
